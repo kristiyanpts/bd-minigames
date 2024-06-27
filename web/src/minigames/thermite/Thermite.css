@@ -1,0 +1,143 @@
+.thermite {
+  position: relative;
+  display: grid;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.thermite .square {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: radial-gradient(
+    circle,
+    #ff7e5f,
+    #feb47b
+  ); /* Replace with your radial gradient */
+  opacity: 0.8;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thermite .square[data-status="full"] {
+  background: linear-gradient(to bottom, #38a2e5, #234e52);
+}
+
+.thermite .square[data-status="half"] {
+  background: linear-gradient(to bottom, #a0aec0, #2d3748);
+}
+
+.thermite .square[data-status="fail"] {
+  background: linear-gradient(to bottom, #c53030, #742a2a);
+}
+
+.thermite .square[data-status="empty"] {
+  background: transparent;
+}
+
+.thermite .square[data-status="empty"] * {
+  display: none;
+}
+
+.thermite .piece {
+  width: 100%;
+  height: 100%;
+  padding: 25%;
+}
+
+.thermite .crosses {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: min-content min-content;
+  grid-template-columns: min-content min-content;
+  justify-content: space-between;
+  align-content: space-between;
+  padding: 0.25rem;
+  opacity: 0.3;
+}
+
+.thermite .crosses img {
+  max-width: none;
+}
+
+.thermite .highlight {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  opacity: 0.2;
+  animation: highlight 1s infinite;
+}
+
+.thermite .square[data-highlighted="true"] .highlight {
+  background: white;
+  cursor: pointer;
+}
+
+.thermite .notice {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.thermite .notice span {
+  animation: notice 1s forwards;
+  font-size: 2.5rem;
+  color: white;
+  opacity: 0;
+}
+
+.thermite .background {
+  background: radial-gradient(
+    circle,
+    #121d23,
+    #0b161c
+  ); /* Replace with your radial gradient */
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Add your keyframe animations if needed */
+@keyframes highlight {
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes notice {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.background-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
