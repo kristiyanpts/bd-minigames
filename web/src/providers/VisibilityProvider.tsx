@@ -6,7 +6,6 @@ import React, {
   useState,
 } from "react";
 import { useNuiEvent } from "../hooks/useNuiEvent";
-import { fetchNui } from "../utils/fetchNui";
 import { isEnvBrowser } from "../utils/misc";
 
 const VisibilityCtx = createContext<VisibilityProviderValue | null>(null);
@@ -30,16 +29,21 @@ export const VisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // Only attach listener when we are visible
     if (!visible) return;
 
-    const keyHandler = (e: KeyboardEvent) => {
+    const keyHandler = async (e: KeyboardEvent) => {
       if (["Escape"].includes(e.code)) {
-        if (!isEnvBrowser()) fetchNui("hideFrame");
-        else setVisible(!visible);
+        if (!isEnvBrowser()) {
+          console.log("Minigame isn't closable in game");
+        } else {
+          setVisible(!visible);
+        }
       }
     };
 
     window.addEventListener("keydown", keyHandler);
 
-    return () => window.removeEventListener("keydown", keyHandler);
+    return () => {
+      window.removeEventListener("keydown", keyHandler);
+    };
   }, [visible]);
 
   return (

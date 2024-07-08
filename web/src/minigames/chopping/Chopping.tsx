@@ -6,10 +6,14 @@ import classNames from "classnames";
 import "./Chopping.css";
 import HackContainer from "../../components/HackContainer";
 import { SettingsRange } from "../../components/Settings";
-import usePersistantState from "../../hooks/usePersistentState";
 import useGame from "../../hooks/useGame";
 import { useKeyDown } from "../../hooks/useKeyDown";
 import { Letter, LetterState, Letters } from "./utils";
+import { isEnvBrowser } from "../../utils/misc";
+import { useNavigate } from "react-router-dom";
+import { finishMinigame } from "../../utils/finishMinigame";
+import { useNuiEvent } from "../../hooks/useNuiEvent";
+import { Minigame } from "../../types/general";
 
 const getStatusMessage = (status: number | undefined) => {
   switch (status) {
@@ -37,35 +41,15 @@ const defaultDuration = 7;
 const defaultGridCols = 6;
 
 const Chopping: FC = () => {
-  const [timer, setTimer] = usePersistantState(
-    "chopping-timer",
-    defaultDuration
-  );
-  const [numLetters, setNumLetters] = usePersistantState(
-    "chopping-num-letters",
-    defaultNumLetters
-  );
-  const [activeIndex, setActiveIndex] = usePersistantState(
-    "chopping-active-index",
-    0
-  );
+  const [timer, setTimer] = useState(defaultDuration);
+  const [numLetters, setNumLetters] = useState(defaultNumLetters);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [board, setBoard] = useState<Letter[]>(new Array(defaultNumLetters));
   const [stateBoard, setStateBoard] = useState<LetterState[]>(
     new Array(defaultNumLetters).fill("")
   );
-
-  const resetBoard = () => {
-    const newBoard: Letter[] = [];
-    console.log(`Resetting board with ${numLetters} letters`);
-    for (let i = 0; i < numLetters; i++) {
-      newBoard.push(getRandomLetter());
-    }
-    setBoard(newBoard);
-    setActiveIndex(0);
-
-    const newStateBoard = new Array(numLetters).fill("");
-    setStateBoard(newStateBoard);
-  };
+  const navigate = useNavigate();
+  const [shouldReset, setShouldReset] = useState(false);
 
   const statusUpdateHandler = (newStatus: number) => {
     switch (newStatus) {
@@ -81,8 +65,49 @@ const Chopping: FC = () => {
     statusUpdateHandler
   );
 
-  const resetGame = () => {
-    setGameStatus(1);
+  useEffect(() => {
+    if (shouldReset) {
+      setStateBoard(new Array(numLetters).fill(""));
+      setGameStatus(1);
+      setShouldReset(false);
+    }
+  }, [numLetters, shouldReset, setGameStatus]);
+
+  useNuiEvent("playMinigame", (minigame: Minigame) => {
+    if (minigame.minigame !== "chopping") return;
+
+    const data = minigame.data as {
+      letters: number;
+      timer: number;
+    };
+
+    setTimer(data.timer);
+    setNumLetters(data.letters);
+    setShouldReset(true);
+  });
+
+  const resetBoard = () => {
+    const newBoard: Letter[] = [];
+    console.log(`Resetting board with ${numLetters} letters`);
+    for (let i = 0; i < numLetters; i++) {
+      newBoard.push(getRandomLetter());
+    }
+    setBoard(newBoard);
+    setActiveIndex(0);
+
+    const newStateBoard = new Array(numLetters).fill("");
+    setStateBoard(newStateBoard);
+  };
+
+  const resetGame = async () => {
+    if (isEnvBrowser()) {
+      setGameStatus(1);
+    } else {
+      const result = gameStatus === 3 ? true : false;
+
+      await finishMinigame(result);
+      navigate("/");
+    }
   };
 
   const handleWin = (message: string) => {
@@ -138,10 +163,6 @@ const Chopping: FC = () => {
   useEffect(() => {
     setSettingsNumLetters(numLetters);
     setSettingsDuration(timer);
-
-    if (gameStatus !== 4) {
-      resetGame();
-    }
   }, [numLetters, timer]);
 
   const settings = {

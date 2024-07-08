@@ -147,7 +147,7 @@ const HackContainer: FC<HackContainerProps> = ({
                             gap-4
                         "
             >
-              <embed className="w-8 sm:w-10" src={gamePad} />
+              <img className="w-8 sm:w-10" src={gamePad} />
               <h2
                 className="
                                 text-lg
@@ -205,7 +205,7 @@ const HackContainer: FC<HackContainerProps> = ({
                             text-white
                             rounded
                             flex items-center justify-center
-                            w-full h-full left-0 top-0 bg-[rgb(0_0_0/0.7)]
+                            w-full h-full left-0 top-0 bg-[rgb(0_0_0/0.7)] z-20
                         `
               )}
             >

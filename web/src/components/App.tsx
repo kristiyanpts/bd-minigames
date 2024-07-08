@@ -7,12 +7,11 @@ import Thermite from "../minigames/thermite/Thermite";
 import Pincracker from "../minigames/pincracker/Pincracker";
 import Chopping from "../minigames/chopping/Chopping";
 import Lockpick from "../minigames/lockpick/Lockpick";
-import RepairKit from "../minigames/repairkit/Repairkit";
 import RoofRunning from "../minigames/roofrunning/RoofRunning";
 import WordMemory from "../minigames/wordmemory/WordMemory";
-import ColorPicker from "../minigames/colorpicker/ColorPicker";
 import { useNuiEvent } from "../hooks/useNuiEvent";
 import { Minigame } from "../types/general";
+import LaptopTerminal from "../minigames/laptopterminal/LaptopTerminal";
 
 debugData([
   {
@@ -24,7 +23,7 @@ debugData([
 const App: React.FC = () => {
   const navigate = useNavigate();
 
-  useNuiEvent("playMinigame", (data: Minigame) => {
+  useNuiEvent("navigateMinigame", (data: Minigame) => {
     navigate(data.minigame);
   });
 
@@ -37,10 +36,9 @@ const App: React.FC = () => {
           <Route path="/pincracker" element={<Pincracker />} />
           <Route path="/chopping" element={<Chopping />} />
           <Route path="/lockpick" element={<Lockpick />} />
-          <Route path="/repair-kit" element={<RepairKit />} />
           <Route path="/roof-running" element={<RoofRunning />} />
           <Route path="/word-memory" element={<WordMemory />} />
-          <Route path="/color-picker" element={<ColorPicker />} />
+          <Route path="/laptop-terminal" element={<LaptopTerminal />} />
         </Route>
       </Routes>
     </div>

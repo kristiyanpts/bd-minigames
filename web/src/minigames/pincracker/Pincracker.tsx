@@ -3,7 +3,6 @@
 import { FC, useEffect, useState } from "react";
 import HackContainer from "../../components/HackContainer";
 import { SettingsRange } from "../../components/Settings";
-import usePersistantState from "../../hooks/usePersistentState";
 import {
   checkBeepPlayer,
   successPlayer,
@@ -11,6 +10,11 @@ import {
 import useGame from "../../hooks/useGame";
 import { useKeyDown } from "../../hooks/useKeyDown";
 import { Digit, Digits } from "./utils";
+import { useNuiEvent } from "../../hooks/useNuiEvent";
+import { Minigame } from "../../types/general";
+import { isEnvBrowser } from "../../utils/misc";
+import { finishMinigame } from "../../utils/finishMinigame";
+import { useNavigate } from "react-router-dom";
 
 const defaultDuration = 20;
 
@@ -32,18 +36,48 @@ const getStatusMessage = (status: number | undefined) => {
 };
 
 const Pincracker: FC = () => {
-  const [timer, setTimer] = usePersistantState(
-    "chopping-timer",
-    defaultDuration
-  );
+  const [timer, setTimer] = useState(defaultDuration);
   const [settingsDuration, setSettingsDuration] = useState(defaultDuration);
-  const [activeIndex, setActiveIndex] = usePersistantState(
-    "pincracker-active-index",
-    0
-  );
+  const [activeIndex, setActiveIndex] = useState(0);
   const [allowKeyDown, setAllowKeyDown] = useState(true);
   const [pinLength, setPinLength] = useState(4);
   const [pin, setPin] = useState<Digit[]>();
+  const [shouldReset, setShouldReset] = useState(false);
+  const navigate = useNavigate();
+
+  const statusUpdateHandler = (newStatus: number) => {
+    switch (newStatus) {
+      case 1:
+        setAllowKeyDown(false);
+        resetBoard();
+        break;
+    }
+  };
+
+  const [gameStatus, setGameStatus] = useGame(
+    timer * 1000,
+    statusUpdateHandler
+  );
+
+  useEffect(() => {
+    if (shouldReset) {
+      setGameStatus(1);
+      setShouldReset(false);
+    }
+  }, [shouldReset, setGameStatus]);
+
+  useNuiEvent("playMinigame", (minigame: Minigame) => {
+    if (minigame.minigame !== "pincracker") return;
+
+    const data = minigame.data as {
+      pinLength: number;
+      timer: number;
+    };
+
+    setPinLength(data.pinLength);
+    setTimer(data.timer);
+    setShouldReset(true);
+  });
 
   const handleCrack = () => {
     if (activeIndex < pinLength) {
@@ -155,22 +189,15 @@ const Pincracker: FC = () => {
     setAllowKeyDown(true);
   };
 
-  const statusUpdateHandler = (newStatus: number) => {
-    switch (newStatus) {
-      case 1:
-        setAllowKeyDown(false);
-        resetBoard();
-        break;
+  const resetGame = async () => {
+    if (isEnvBrowser()) {
+      setGameStatus(1);
+    } else {
+      const result = gameStatus === 3 ? true : false;
+
+      await finishMinigame(result);
+      navigate("/");
     }
-  };
-
-  const [gameStatus, setGameStatus] = useGame(
-    timer * 1000,
-    statusUpdateHandler
-  );
-
-  const resetGame = () => {
-    setGameStatus(1);
   };
 
   const removeDigit = (idx: number) => {

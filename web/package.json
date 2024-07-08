@@ -17,6 +17,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "classnames": "^2.5.1",
+    "lucide-react": "^0.400.0",
     "random-words": "^2.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.3.1"

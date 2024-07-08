@@ -14,7 +14,6 @@ interface ButtonProps {
 }
 
 const Button: React.FC<ButtonProps> = ({
-  type,
   color,
   label,
   icon,

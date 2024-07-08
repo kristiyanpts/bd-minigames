@@ -12,8 +12,13 @@ import {
 } from "./utils";
 import HackContainer from "../../components/HackContainer";
 import { SettingsRange } from "../../components/Settings";
-import usePersistantState from "../../hooks/usePersistentState";
 import useGame from "../../hooks/useGame";
+import { useNuiEvent } from "../../hooks/useNuiEvent";
+import { Minigame } from "../../types/general";
+import { isEnvBrowser } from "../../utils/misc";
+import { finishMinigame } from "../../utils/finishMinigame";
+import { useNavigate } from "react-router-dom";
+import { failedPlayer, successPlayer } from "../../assets/audio/AudioManager";
 
 const getStatusMessage = (status: number | undefined) => {
   switch (status) {
@@ -41,28 +46,15 @@ const defaultColumns = 11;
 const defaultDuration = 25;
 
 const RoofRunning: FC = () => {
-  const [timer, setTimer] = usePersistantState(
-    "roofrunning-timer",
-    defaultDuration
-  ); // TODO: Get the actual speed
-  const [rows, setRows] = usePersistantState("roofrunning-rows", defaultRows);
-  const [columns, setColumns] = usePersistantState(
-    "roofrunning-columns",
-    defaultColumns
-  );
+  const [timer, setTimer] = useState(defaultDuration); // TODO: Get the actual speed
+  const [rows, setRows] = useState(defaultRows);
+  const [columns, setColumns] = useState(defaultColumns);
 
   const [board, setBoard] = useState<SquareValue[]>(
     new Array(rows * columns).fill("empty")
   );
-
-  const resetBoard = () => {
-    const newBoard: SquareColor[] = [];
-    console.log(`generating new ${rows}x${columns} board`);
-    for (let i = 0; i < rows * columns; i++) {
-      newBoard.push(getRandomColor());
-    }
-    setBoard(newBoard);
-  };
+  const [shouldReset, setShouldReset] = useState(false);
+  const navigate = useNavigate();
 
   const statusUpdateHandler = (newStatus: number) => {
     switch (newStatus) {
@@ -78,20 +70,62 @@ const RoofRunning: FC = () => {
     statusUpdateHandler
   );
 
-  const resetGame = () => {
-    setGameStatus(1);
+  useEffect(() => {
+    if (shouldReset) {
+      setBoard(new Array(rows * columns).fill("empty"));
+      setGameStatus(1);
+      setShouldReset(false);
+    }
+  }, [shouldReset, setGameStatus, rows, columns]);
+
+  useNuiEvent("playMinigame", (minigame: Minigame) => {
+    if (minigame.minigame !== "roof-running") return;
+
+    const data = minigame.data as {
+      rows: number;
+      columns: number;
+      timer: number;
+    };
+
+    setRows(data.rows);
+    setColumns(data.columns);
+    setTimer(data.timer);
+
+    setShouldReset(true);
+  });
+
+  const resetBoard = () => {
+    const newBoard: SquareColor[] = [];
+    console.log(`generating new ${rows}x${columns} board`);
+    for (let i = 0; i < rows * columns; i++) {
+      newBoard.push(getRandomColor());
+    }
+    setBoard(newBoard);
+  };
+
+  const resetGame = async () => {
+    if (isEnvBrowser()) {
+      setGameStatus(1);
+    } else {
+      const result = gameStatus === 3 ? true : false;
+
+      await finishMinigame(result);
+      navigate("/");
+    }
   };
 
   const handleWin = (message: string) => {
     console.log(`Win: ${message}`);
 
     setGameStatus(3);
+    successPlayer.play();
   };
 
   const handleLose = (message: string) => {
     console.log(`Lose: ${message}`);
 
     setGameStatus(2);
+    failedPlayer.play();
   };
 
   const checkStatus = (newBoard: SquareValue[]) => {
@@ -99,41 +133,11 @@ const RoofRunning: FC = () => {
       handleWin("All tiles cleared");
     }
 
-    // Fail if:
-    // 1. There is exactly one tile of any color remaining
-    // 2. There are no clusters larger than 1
-
-    // Check every color
     for (let i = 0; i < squareColors.length; i++) {
       if (newBoard.filter((value) => value === squareColors[i]).length === 1) {
         handleLose(`Unsolvable: 1 ${squareColors[i]} tile remaining`);
       }
-      // This code should be a bit quicker since it immediately exits upon finding 0 or >1, but it doesn't seem to
-      // work for some reason.
-
-      // const first = squareColors.indexOf(squareColors[i]);
-      // if (first === -1) {
-      //     // No instances of this color, continue
-      //     continue;
-      // }
-      // // Count the occurrences
-      // let count = 0;
-      // getCount: {
-      //     for (let j=first; j<newBoard.length; j++) {
-      //         if (newBoard[j] === squareColors[i]) {
-      //             count++;
-      //             if (count > 1) {
-      //                 // There's more than one,
-      //                 break getCount;
-      //             }
-      //         }
-      //     }
-      //     console.log(first);
-      //     handleLose(`Unsolvable: ${count} ${squareColors[i]} tile remaining`);
-      // }
     }
-
-    // Look for a cluster larger than 1
   };
 
   const handleClick = (index: number) => {
@@ -163,12 +167,6 @@ const RoofRunning: FC = () => {
     setSettingsRows(rows);
     setSettingsColumns(columns);
     setSettingsTimer(timer);
-
-    // I don't want to re-run the useEffect if this updates. My IDE wants me to put this in the dependencies, but
-    // that isn't what I want to do. I think it should be fine if it is left out?
-    if (gameStatus !== 4) {
-      resetGame();
-    }
   }, [rows, columns, timer]);
 
   const settings = {

@@ -20,8 +20,12 @@ import "./Thermite.css";
 import HackContainer from "../../components/HackContainer";
 import { SettingsRange } from "../../components/Settings";
 import Button from "../../components/Button";
-import usePersistantState from "../../hooks/usePersistentState";
 import useGame from "../../hooks/useGame";
+import { useNuiEvent } from "../../hooks/useNuiEvent";
+import { Minigame } from "../../types/general";
+import { useNavigate } from "react-router-dom";
+import { finishMinigame } from "../../utils/finishMinigame";
+import { isEnvBrowser } from "../../utils/misc";
 
 const Thermite: FC = () => {
   const [board, setBoard] = useState<GridRow[]>(initialBoard);
@@ -32,30 +36,20 @@ const Thermite: FC = () => {
   const [resetAnimation, setResetAnimation] = useState<boolean>(false);
   const [showComboNotice, setShowComboNotice] = useState<boolean>(false);
   const [isOutOfMoves, setOutOfMoves] = useState<boolean>(false);
-  const [selectedPreset, setSelectedPreset] = usePersistantState(
-    "thermite-preset",
-    0
-  );
-  const [timer, setTimer] = usePersistantState(
-    "thermite-timer",
-    presets[selectedPreset].timer
-  );
-  const [targetScore, setTargetScore] = usePersistantState(
-    "thermite-targetScore",
+  const [selectedPreset, setSelectedPreset] = useState(0);
+  const [timer, setTimer] = useState(presets[selectedPreset].timer);
+  const [targetScore, setTargetScore] = useState(
     presets[selectedPreset].targetScore
   );
-  const [rows, setRows] = usePersistantState(
-    "thermite-rows",
-    presets[selectedPreset].rows
-  );
-  const [columns, setColumns] = usePersistantState(
-    "thermite-columns",
-    presets[selectedPreset].columns
-  );
+  const [rows, setRows] = useState(presets[selectedPreset].rows);
+  const [columns, setColumns] = useState(presets[selectedPreset].columns);
+  const [shouldReset, setShouldReset] = useState(false);
+  const navigate = useNavigate();
 
   /**
    * Resets the board.
    */
+
   const resetBoard = useCallback((): void => {
     const newBoard: GridRow[] = [];
     for (let i = 0; i < rows; i++) {
@@ -73,11 +67,6 @@ const Thermite: FC = () => {
     setOutOfMoves(false);
   }, [columns, rows]);
 
-  /**
-   * Handles the game status updating.
-   *
-   * @param {number} newStatus - New game status.
-   */
   const statusUpdateHandler = useCallback(
     (newStatus: number): void => {
       switch (newStatus) {
@@ -98,12 +87,50 @@ const Thermite: FC = () => {
     statusUpdateHandler
   );
 
+  useEffect(() => {
+    if (shouldReset) {
+      setGameStatus(1);
+      setShouldReset(false);
+    }
+  }, [shouldReset, setGameStatus]);
+
+  useNuiEvent("playMinigame", (minigame: Minigame) => {
+    if (minigame.minigame !== "thermite") return;
+
+    const data = minigame.data as {
+      targetScore: number;
+      rows: number;
+      columns: number;
+      timer: number;
+    };
+
+    setTargetScore(data.targetScore);
+    setRows(data.rows);
+    setColumns(data.columns);
+    setTimer(data.timer);
+
+    setShouldReset(true);
+  });
+
+  /**
+   * Handles the game status updating.
+   *
+   * @param {number} newStatus - New game status.
+   */
+
   /**
    * Resets the game.
    */
-  const resetGame = useCallback((): void => {
-    setGameStatus(1);
-  }, [setGameStatus]);
+  const resetGame = useCallback(async () => {
+    if (isEnvBrowser()) {
+      setGameStatus(1);
+    } else {
+      const result = gameStatus === 3 ? true : false;
+
+      await finishMinigame(result);
+      navigate("/");
+    }
+  }, [setGameStatus, gameStatus, navigate]);
 
   /**
    * Sets a square's properties.
@@ -300,19 +327,7 @@ const Thermite: FC = () => {
     setSettingsTargetScore(targetScore);
     setSettingsRows(rows);
     setSettingsColumns(columns);
-
-    if (gameStatus === 0 || gameStatus === 1) {
-      resetGame();
-    }
-  }, [
-    selectedPreset,
-    timer,
-    targetScore,
-    rows,
-    columns,
-    resetGame,
-    gameStatus,
-  ]);
+  }, [selectedPreset, timer, targetScore, rows, columns]);
 
   const settings = {
     handleSave: () => {

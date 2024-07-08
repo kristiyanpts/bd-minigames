@@ -1,14 +1,17 @@
 "use client";
 
-import React, { FC, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import classNames from "classnames";
-import usePersistantState from "../../hooks/usePersistentState";
 import { useKeyDown } from "../../hooks/useKeyDown";
 import { SettingsRange } from "../../components/Settings";
 import HackContainer from "../../components/HackContainer";
 import useGame from "../../hooks/useGame";
 import { useNuiEvent } from "../../hooks/useNuiEvent";
 import { Minigame } from "../../types/general";
+import { isEnvBrowser, shuffle } from "../../utils/misc";
+import { failedPlayer, successPlayer } from "../../assets/audio/AudioManager";
+import { finishMinigame } from "../../utils/finishMinigame";
+import { useNavigate } from "react-router-dom";
 
 type RingColor = "red" | "yellow" | "blue";
 
@@ -32,29 +35,6 @@ const getStatusMessage = (status: number | undefined) => {
     default:
       return `Error: Unknown game status ${status}`;
   }
-};
-
-const shuffle = <T,>(array: T[]): T[] => {
-  // Create a copy of the array
-  const result = [...array];
-
-  let currentIndex = result.length,
-    randomIndex;
-
-  // While there remain elements to shuffle.
-  while (currentIndex > 0) {
-    // Pick a remaining element.
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [result[currentIndex], result[randomIndex]] = [
-      result[randomIndex],
-      result[currentIndex],
-    ];
-  }
-
-  return result;
 };
 
 const getRandomN = <T,>(array: T[], n: number): T[] => {
@@ -103,10 +83,10 @@ const generateRing = (difficulty: "normal" | "hard" = "normal"): Ring => {
 
   let resultBalls: number[];
   let resultSlots: number[];
+  const shuffledPositions = shuffle(initialPositions);
 
   switch (difficulty) {
     case "normal":
-      const shuffledPositions = shuffle(initialPositions);
       resultBalls = shuffledPositions.slice(0, amountBalls);
       resultSlots = shuffledPositions.slice(0, amountSlots);
       break;
@@ -135,35 +115,19 @@ const countdownDuration = 30;
 
 const Lockpick = () => {
   const [title, setTitle] = useState<string>("Lockpick");
-  const [levels, setLevels] = usePersistantState(
-    `lockpick-${title}-levels`,
-    maxLevels
-  );
-  const [timer, setTimer] = usePersistantState(
-    `lockpick-${title}-timer`,
-    countdownDuration
-  );
+  const [levels, setLevels] = useState(maxLevels);
+  const [timer, setTimer] = useState(countdownDuration);
   const [rings, setRings] = useState<Ring[]>([]);
   const [rotation, setRotation] = useState<number>(0);
   const [level, setLevel] = useState<number>(0);
-
-  useNuiEvent("playMinigame", (minigame: Minigame) => {
-    const data = minigame.data as {
-      title: string;
-      levels: number;
-      timer: number;
-    };
-
-    setTitle(data.title);
-    setLevels(data.levels);
-    setTimer(data.timer);
-  });
+  const navigate = useNavigate();
+  const [shouldReset, setShouldReset] = useState(false);
 
   const statusUpdateHandler = (newStatus: number) => {
+    const newRings: Ring[] = [];
     switch (newStatus) {
       case 1:
         console.log("Reset game");
-        const newRings: Ring[] = [];
         for (let i = 0; i < levels; i++) {
           // TODO: Add config for difficulty
           newRings.push(generateRing());
@@ -180,19 +144,50 @@ const Lockpick = () => {
     statusUpdateHandler
   );
 
-  const resetGame = () => {
-    setGameStatus(1);
+  useEffect(() => {
+    if (shouldReset) {
+      setGameStatus(1);
+      setShouldReset(false);
+    }
+  }, [shouldReset, setGameStatus]);
+
+  useNuiEvent("playMinigame", (minigame: Minigame) => {
+    if (minigame.minigame !== "lockpick") return;
+
+    const data = minigame.data as {
+      title: string;
+      levels: number;
+      timer: number;
+    };
+
+    setTitle(data.title);
+    setLevels(data.levels);
+    setTimer(data.timer);
+    setShouldReset(true);
+  });
+
+  const resetGame = async () => {
+    if (isEnvBrowser()) {
+      setGameStatus(1);
+    } else {
+      const result = gameStatus === 3 ? true : false;
+
+      await finishMinigame(result);
+      navigate("/");
+    }
   };
 
-  const handleWin = (message: string) => {
+  const handleWin = async (message: string) => {
     console.log(`Win: ${message}`);
 
+    successPlayer.play();
     setGameStatus(3);
   };
 
-  const handleLose = (message: string) => {
+  const handleLose = async (message: string) => {
     console.log(`Lose: ${message}`);
 
+    failedPlayer.play();
     setGameStatus(2);
   };
 
@@ -264,13 +259,7 @@ const Lockpick = () => {
   useEffect(() => {
     setSettingsLevels(levels);
     setSettingsTimer(timer);
-
-    // I don't want to re-run the useEffect if this updates. My IDE wants me to put this in the dependencies, but
-    // that isn't what I want to do. I think it should be fine if it is left out?
-    if (gameStatus !== 4) {
-      resetGame();
-    }
-  }, [levels, timer, gameStatus, resetGame]);
+  }, [levels, timer, gameStatus]);
 
   const settings = {
     handleSave: () => {
