@@ -4,6 +4,7 @@ import { FC, useEffect, useState } from "react";
 import HackContainer from "../../components/HackContainer";
 import { SettingsRange } from "../../components/Settings";
 import {
+  failedPlayer,
   checkBeepPlayer,
   successPlayer,
 } from "../../assets/audio/AudioManager";
@@ -25,6 +26,7 @@ const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "You suck at this :D";
     case 3:
       return "Sometimes you win :O";
