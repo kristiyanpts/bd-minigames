@@ -1,6 +1,7 @@
 import shortImg from "../../assets/images/thermite/short.svg";
 import mediumImg from "../../assets/images/thermite/medium.svg";
 import longImg from "../../assets/images/thermite/long.svg";
+import { failedPlayer, successPlayer } from "../../assets/audio/AudioManager";
 
 export type PieceType = "short" | "medium" | "long";
 export type SquarePiece = {
@@ -98,8 +99,10 @@ export const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "You suck at this :D";
     case 3:
+      successPlayer.play();
       return "Sometimes you win :O";
     case 4:
       return "Reset!";

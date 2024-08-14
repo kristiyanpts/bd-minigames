@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight, Circle, Square, Triangle } from "lucide-react";
 import { useNuiEvent } from "../../hooks/useNuiEvent";
 import { Minigame } from "../../types/general";
+import { failedPlayer, successPlayer } from "../../assets/audio/AudioManager";
 
 /*
 Easy : 4 seq -> 2 shapes each (same color per seq) -> 3 questions -> prep = 12, answer = 12
@@ -31,8 +32,10 @@ const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "You suck at this :D";
     case 3:
+      successPlayer.play();
       return "Sometimes you win :O";
     case 4:
       return "Reset!";

@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { finishMinigame } from "../../utils/finishMinigame";
 import { useNuiEvent } from "../../hooks/useNuiEvent";
 import { Minigame } from "../../types/general";
+import { failedPlayer, checkBeepPlayer, successPlayer } from "../../assets/audio/AudioManager";
 
 const getStatusMessage = (status: number | undefined) => {
   switch (status) {
@@ -22,8 +23,10 @@ const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "You suck at this :D";
     case 3:
+      successPlayer.play();
       return "Sometimes you win :O";
     case 4:
       return "Reset!";
@@ -142,7 +145,7 @@ const Chopping: FC = () => {
     } else {
       newStateBoard[activeIndex] = "fail";
     }
-
+    checkBeepPlayer.play();
     setBoard(newBoard);
     setStateBoard(newStateBoard);
     checkStatus(newStateBoard);

@@ -27,8 +27,10 @@ const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "You suck at this :D";
     case 3:
+      successPlayer.play();
       return "Sometimes you win :O";
     case 4:
       return "Reset!";
@@ -118,14 +120,12 @@ const RoofRunning: FC = () => {
     console.log(`Win: ${message}`);
 
     setGameStatus(3);
-    successPlayer.play();
   };
 
   const handleLose = (message: string) => {
     console.log(`Lose: ${message}`);
 
     setGameStatus(2);
-    failedPlayer.play();
   };
 
   const checkStatus = (newBoard: SquareValue[]) => {

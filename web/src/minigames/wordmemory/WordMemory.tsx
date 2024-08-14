@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { generate } from "random-words";
 import HackContainer from "../../components/HackContainer";
 import useGame from "../../hooks/useGame";
+import { failedPlayer, successPlayer } from "../../assets/audio/AudioManager";
 
 const getStatusMessage = (status: number | undefined) => {
   switch (status) {
@@ -12,8 +13,10 @@ const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "You suck at this :D";
     case 3:
+      successPlayer.play();
       return "Succeeded!";
     default:
       return `Error: Unknown game status ${status}`;

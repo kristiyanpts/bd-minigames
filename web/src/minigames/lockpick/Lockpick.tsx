@@ -27,8 +27,10 @@ const getStatusMessage = (status: number | undefined) => {
     case 1:
       return "";
     case 2:
+      failedPlayer.play();
       return "The lockpick bent out of shape.";
     case 3:
+      successPlayer.play();
       return "The lock was picked successfully.";
     case 4:
       return "Reset!";
@@ -180,14 +182,12 @@ const Lockpick = () => {
   const handleWin = async (message: string) => {
     console.log(`Win: ${message}`);
 
-    successPlayer.play();
     setGameStatus(3);
   };
 
   const handleLose = async (message: string) => {
     console.log(`Lose: ${message}`);
 
-    failedPlayer.play();
     setGameStatus(2);
   };
 
