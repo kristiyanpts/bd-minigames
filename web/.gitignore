@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-build
+package-lock.json
 *.local
 
 # Editor directories and files
